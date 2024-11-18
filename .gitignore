@@ -1,0 +1,15 @@
+# ignore SSL certificates 
+nginx.pem
+nginx.crt 
+nginx.key
+
+# ignore logs 
+*.log
+
+# ignore .env files
+*.env
+prometheus/config.yaml
+
+# keep example .env files
+!*.example.env
+!prometheus/*.config.yaml
