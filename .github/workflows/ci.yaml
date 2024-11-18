@@ -30,16 +30,15 @@ jobs:
         username: ${{github.actor}}
         password: ${{secrets.GITHUB_TOKEN}}
     
-    - name: Build NGINX Image
-      run: |
-        docker build -t ghcr.io/${REPO}/nginx:${{ github.sha }} .
-  
-    - name: Push NGINX Image
+    - name: Build and push NGINX image
       uses: docker/build-push-action@v6
       with:
         context: .
+        file: ./nginx/dockerfile
         push: true
-        tags: ghcr.io/${REPO}/nginx:${{ github.ref_name }}, ghcr.io/${REPO}/nginx:${{ github.sha }}
+        tags: ghcr.io/${REPO}:${{ github.sha }}, ghcr.io/${REPO}:${{ github.ref_name }}, ${{ github.ref_name == 'main' && 'ghcr.io/${REPO}:latest' || '' }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     
   test: 
     runs-on: ubuntu-latest 
@@ -50,13 +49,13 @@ jobs:
       run: echo "REPO=${GITHUB_REPOSITORY@L}" >> "${GITHUB_ENV}"
 
     - name: Pull NGINX image 
-      run: docker pull ghcr.io/${REPO}/nginx:${{ github.sha }}
+      run: docker pull ghcr.io/${REPO}:${{ github.sha }}
 
     - name: Create self-signed SSL certificate
       run: openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.pem -subj "/C=CA/ST=BC/L=Vancouver/O=MykalMachon/CN=localhost"
 
     - name: Run NGINX container
-      run: docker run -d -p 443:443 -v /tmp/nginx.crt:/etc/ssl/certs/nginx.crt -v /tmp/nginx.key:/etc/ssl/private/nginx.key ghcr.io/${REPO}/nginx:${{ github.sha }}
+      run: docker run -d -p 443:443 -v /tmp/nginx.crt:/etc/ssl/certs/nginx.crt -v /tmp/nginx.key:/etc/ssl/private/nginx.key ghcr.io/${REPO}:${{ github.sha }}
 
     - name: Test NGINX container
       id: test-nginx
@@ -73,10 +72,10 @@ jobs:
         '
     
     - name: Stop NGINX container
-      run: docker stop $(docker ps -q --filter ancestor=ghcr.io/${{ github.env.REPO }}/nginx:${{ github.sha }})
+      run: docker stop $(docker ps -q --filter ancestor=ghcr.io/${{ github.env.REPO }}:${{ github.sha }})
 
     - name: Remove NGINX container
-      run: docker rm $(docker ps -a -q --filter ancestor=ghcr.io/${{ github.env.REPO }}/nginx:${{ github.sha }})
+      run: docker rm $(docker ps -a -q --filter ancestor=ghcr.io/${{ github.env.REPO }}:${{ github.sha }})
     
     - name: Publish test results 
       uses: actions/github-script@v7
