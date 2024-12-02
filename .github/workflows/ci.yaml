@@ -51,7 +51,7 @@ jobs:
       run: openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.pem -subj "/C=CA/ST=BC/L=Vancouver/O=MykalMachon/CN=localhost"
 
     - name: Run NGINX container
-      run: docker run -d -p 443:443 -v /tmp/nginx.crt:/etc/ssl/certs/nginx.crt -v /tmp/nginx.key:/etc/ssl/private/nginx.key ghcr.io/${{ env.repo }}:${{ github.sha }}
+      run: docker run -d -p 443:443 -v /tmp/nginx.pem:/etc/ssl/certs/nginx.pem -v /tmp/nginx.key:/etc/ssl/private/nginx.key ghcr.io/${{ env.repo }}:${{ github.sha }}
 
     - name: Wait for NGINX container to start
       run: sleep 10
